@@ -1,0 +1,68 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <link rel="stylesheet" href="https://use.typekit.net/mli2fdb.css">
+  <style>
+    @page {
+      -ro-scale-content: auto;
+      size: 127mm 213mm;
+    }
+
+    .image > img {
+      width: 100%;
+    }
+
+    .text-cage {
+      position: absolute;
+      left: 35%;
+      top: 21%;
+      width: 30%;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+
+    .name-cage {
+      position: absolute;
+      left: 35.1%;
+      top: 23%;
+      width: 30%;
+      text-align: center;
+      font-size: 2.2em;
+      font-weight: bold;
+      color: #947F48;
+      letter-spacing: 5px;
+    }
+
+    .photo-cage {
+      position: absolute;
+      right: 0;
+      top: 17%;
+      width: 30%;
+      text-align: center;
+      font-size: 2.2em;
+      font-weight: bold;
+      color: #947F48;
+      letter-spacing: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="image">
+    <img src="http://213.239.220.114/public/mbl/test/WITHFOTO/label1.5L.png" alt="">
+  </div>
+  <div class="text-cage">
+    <span class="tk-parkside">{{ text }}</span>
+  </div>
+  <div class="name-cage">
+    <span class="tk-agency-fb">{{ name }}</span>
+  </div>
+  <div class="photo-cage">
+    <img src="data:image/jpg;base64,{{ image }}" alt="">
+  </div>
+</body>
+</html>

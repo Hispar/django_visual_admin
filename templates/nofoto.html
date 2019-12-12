@@ -1,0 +1,55 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+  <style>
+     @page {
+       margin: 0.5%;
+       size: {{ width }} {{ height }};
+     }
+  </style>
+  <link rel="stylesheet" href="https://use.typekit.net/mli2fdb.css">
+  <style>
+
+        .image > img {
+          width: 100%;
+        }
+
+        .text-cage {
+          position: absolute;
+          left: 35%;
+          top: 47%;
+          width: 30%;
+          text-align: center;
+          font-weight: bold;
+          font-size: 1.2em;
+        }
+
+        .name-cage {
+          position: absolute;
+          left: 35.1%;
+          top: 51%;
+          width: 30%;
+          text-align: center;
+          font-size: 2.2em;
+          font-weight: bold;
+          color: #947F48;
+          letter-spacing: 5px;
+        }
+  </style>
+</head>
+<body>
+  <div class="image">
+    <img src="http://213.239.220.114/public/mbl/test/NOFOTO/{{ img }}" alt="">
+  </div>
+  <div class="text-cage">
+    <span class="tk-parkside">{{ text }}</span>
+  </div>
+  <div class="name-cage">
+    <span class="tk-agency-fb">{{ name }}</span>
+  </div>
+</body>
+</html>

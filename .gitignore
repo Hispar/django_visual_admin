@@ -1,0 +1,6 @@
+.idea
+*.sqlite3
+static/test
+static/admin2
+test
+pyenv

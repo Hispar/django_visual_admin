@@ -17,11 +17,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path
+import custom_admin
 
-from test.views import TestView, TestFotoView
+from test.views import TestView, TestFotoView, PTView
 
 urlpatterns = [
+    path('tool/', PTView.as_view()),
     path('nofoto/<str:size>', TestView.as_view(), name='nofoto'),
     path('foto/<str:size>', TestFotoView.as_view(), name='foto'),
     path('admin/', admin.site.urls),
+    path('custom_admin/', custom_admin.site.urls),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

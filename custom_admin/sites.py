@@ -4,7 +4,7 @@ from weakref import WeakSet
 from django.apps import apps
 from django.contrib.admin import ModelAdmin, actions
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
-from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.base import ModelBase
 from django.http import Http404, HttpResponseRedirect
@@ -19,6 +19,9 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.i18n import JavaScriptCatalog
 
 from django.contrib.admin.sites import AdminSite as BaseAdminSite
+
+from custom_admin.utils import flatten
+from django_visual_admin.admin import CONFIGURATION
 
 all_sites = WeakSet()
 
@@ -298,16 +301,42 @@ class AdminSite(BaseAdminSite):
         Return a sorted list of all the installed apps that have been
         registered in this site.
         """
+        result = []
+        apps = {}
+        models = list(flatten([list(r.values())[0]['models'] for r in CONFIGURATION]))
+
         app_dict = self._build_app_dict(request)
 
-        # Sort the apps alphabetically.
-        app_list = sorted(app_dict.values(), key=lambda x: x['name'].lower())
+        for app, app_values in app_dict.items():
+            for model in app_values['models']:
+                if model['object_name'] in models:
+                    for custom_app in CONFIGURATION:
+                        for key, custom_app_items in custom_app.items():
+                            if model['object_name'] in list(flatten(custom_app_items['models'])):
+                                if key in result:
+                                    apps[key]['models'].append(model)
+                                else:
+                                    apps[key] = {
+                                        'name': key,
+                                        'app_label': custom_app_items['label'] if custom_app_items['label'] else key.lower(),
+                                        'app_url': '/admin/ingredients/',
+                                        'has_module_perms': True,
+                                        'models': [model]
+                                    }
+                                pass
+                        # if custom_app
+                    pass
+                elif app in result:
+                    apps[app]['models'].append(model)
+                else:
+                    # print(model)
+                    apps[app] = app_values
+                    apps[app]['models'] = [model]
 
-        # Sort the models alphabetically within each app.
-        for app in app_list:
-            app['models'].sort(key=lambda x: x['name'])
+        for app in apps.values():
+            result.append(app)
 
-        return app_list
+        return result
 
     @never_cache
     def index(self, request, extra_context=None):

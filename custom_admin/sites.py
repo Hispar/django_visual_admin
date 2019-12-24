@@ -4,7 +4,7 @@ from weakref import WeakSet
 from django.apps import apps
 from django.contrib.admin import ModelAdmin, actions
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
-from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.base import ModelBase
 from django.http import Http404, HttpResponseRedirect
@@ -20,13 +20,19 @@ from django.views.i18n import JavaScriptCatalog
 
 from django.contrib.admin.sites import AdminSite as BaseAdminSite
 
+from custom_admin.utils import flatten
+from django_visual_admin.admin import CONFIGURATION
+
 all_sites = WeakSet()
 
 
 class AdminSite(BaseAdminSite):
+    index_template = 'custom_admin/index.html'
+    app_index_template = 'custom_admin/app_index.html'
 
     def __init__(self, name='custom_admin'):
         super().__init__(name)
+        self.custom_registry = dict()
 
     # def admin_view(self, view, cacheable=False):
     #     """
@@ -107,15 +113,29 @@ class AdminSite(BaseAdminSite):
             ),
         ]
 
+        custom_models = self._get_custom_apps_map()
+
         # Add in each model's views, and create a list of valid URLS for the
         # app_index
         valid_app_labels = []
         for model, model_admin in self._registry.items():
+            if model.__name__ in custom_models.keys():
+                self.custom_registry[model.__name__] = model_admin
+            else:
+                urlpatterns += [
+                    path('%s/%s/' % (model._meta.app_label, model._meta.model_name), include(model_admin.urls)),
+                ]
+                if model._meta.app_label not in valid_app_labels:
+                    valid_app_labels.append(model._meta.app_label)
+
+        for model, app in custom_models.items():
+            if model not in self.custom_registry.keys():
+                continue
             urlpatterns += [
-                path('%s/%s/' % (model._meta.app_label, model._meta.model_name), include(model_admin.urls)),
+                path('%s/%s/' % (app.lower(), model.lower()), include(self.custom_registry[model].urls)),
             ]
-            if model._meta.app_label not in valid_app_labels:
-                valid_app_labels.append(model._meta.app_label)
+            if app.lower() not in valid_app_labels:
+                valid_app_labels.append(app.lower())
 
         # If there were ModelAdmins registered, we should have a list of app
         # labels for which we need to allow access to the app_index view,
@@ -124,106 +144,27 @@ class AdminSite(BaseAdminSite):
             urlpatterns += [
                 re_path(regex, wrap(self.app_index), name='app_list'),
             ]
+
         return urlpatterns
 
     @property
     def urls(self):
         return self.get_urls(), 'custom_admin', self.name
 
-    # def password_change(self, request, extra_context=None):
-    #     """
-    #     Handle the "change password" task -- both form display and validation.
-    #     """
-    #     from django.contrib.admin.forms import AdminPasswordChangeForm
-    #     from django.contrib.auth.views import PasswordChangeView
-    #     url = reverse('admin:password_change_done', current_app=self.name)
-    #     defaults = {
-    #         'form_class': AdminPasswordChangeForm,
-    #         'success_url': url,
-    #         'extra_context': {**self.each_context(request), **(extra_context or {})},
-    #     }
-    #     if self.password_change_template is not None:
-    #         defaults['template_name'] = self.password_change_template
-    #     request.current_app = self.name
-    #     return PasswordChangeView.as_view(**defaults)(request)
-    #
-    # def password_change_done(self, request, extra_context=None):
-    #     """
-    #     Display the "success" page after a password change.
-    #     """
-    #     from django.contrib.auth.views import PasswordChangeDoneView
-    #     defaults = {
-    #         'extra_context': {**self.each_context(request), **(extra_context or {})},
-    #     }
-    #     if self.password_change_done_template is not None:
-    #         defaults['template_name'] = self.password_change_done_template
-    #     request.current_app = self.name
-    #     return PasswordChangeDoneView.as_view(**defaults)(request)
-    #
-    # def i18n_javascript(self, request, extra_context=None):
-    #     """
-    #     Display the i18n JavaScript that the Django admin requires.
-    #
-    #     `extra_context` is unused but present for consistency with the other
-    #     admin views.
-    #     """
-    #     return JavaScriptCatalog.as_view(packages=['django.contrib.admin'])(request)
+    @staticmethod
+    def _get_custom_apps_map():
+        return {app_model: app_key.lower() for app in CONFIGURATION for app_key, app_values in app.items() for
+                app_sub_key, app_data in app_values.items() if app_sub_key == 'models' for app_model in app_data}
 
-    # @never_cache
-    # def logout(self, request, extra_context=None):
-    #     """
-    #     Log out the user for the given HttpRequest.
-    #
-    #     This should *not* assume the user is already logged in.
-    #     """
-    #     from django.contrib.auth.views import LogoutView
-    #     defaults = {
-    #         'extra_context': {
-    #             **self.each_context(request),
-    #             # Since the user isn't logged out at this point, the value of
-    #             # has_permission must be overridden.
-    #             'has_permission': False,
-    #             **(extra_context or {})
-    #         },
-    #     }
-    #     if self.logout_template is not None:
-    #         defaults['template_name'] = self.logout_template
-    #     request.current_app = self.name
-    #     return LogoutView.as_view(**defaults)(request)
-    #
-    # @never_cache
-    # def login(self, request, extra_context=None):
-    #     """
-    #     Display the login form for the given HttpRequest.
-    #     """
-    #     if request.method == 'GET' and self.has_permission(request):
-    #         # Already logged-in, redirect to admin index
-    #         index_path = reverse('admin:index', current_app=self.name)
-    #         return HttpResponseRedirect(index_path)
-    #
-    #     from django.contrib.auth.views import LoginView
-    #     # Since this module gets imported in the application's root package,
-    #     # it cannot import models from other applications at the module level,
-    #     # and django.contrib.admin.forms eventually imports User.
-    #     from django.contrib.admin.forms import AdminAuthenticationForm
-    #     context = {
-    #         **self.each_context(request),
-    #         'title': _('Log in'),
-    #         'app_path': request.get_full_path(),
-    #         'username': request.user.get_username(),
-    #     }
-    #     if (REDIRECT_FIELD_NAME not in request.GET and
-    #             REDIRECT_FIELD_NAME not in request.POST):
-    #         context[REDIRECT_FIELD_NAME] = reverse('admin:index', current_app=self.name)
-    #     context.update(extra_context or {})
-    #
-    #     defaults = {
-    #         'extra_context': context,
-    #         'authentication_form': self.login_form or AdminAuthenticationForm,
-    #         'template_name': self.login_template or 'admin/login.html',
-    #     }
-    #     request.current_app = self.name
-    #     return LoginView.as_view(**defaults)(request)
+    @staticmethod
+    def _get_custom_models_list_by_app(app_label):
+        return [app_model for app in CONFIGURATION for app_key, app_values in app.items() if
+                app_key.lower() == app_label for
+                app_sub_key, app_data in app_values.items() if app_sub_key == 'models' for app_model in app_data]
+
+    @staticmethod
+    def _get_custom_apps_list():
+        return [app_key for app in CONFIGURATION for app_key in app.keys()]
 
     def _build_app_dict(self, request, label=None):
         """
@@ -232,16 +173,27 @@ class AdminSite(BaseAdminSite):
         """
         app_dict = {}
 
+        custom_models = self._get_custom_apps_map()
+
         if label:
             models = {
                 m: m_a for m, m_a in self._registry.items()
                 if m._meta.app_label == label
             }
+            if not models:
+                models = {
+                    model: self.custom_registry[model_name] for model_name in self._get_custom_models_list_by_app(label)
+                    for model in self._registry.keys() if model.__name__ == model_name
+                }
         else:
             models = self._registry
 
         for model, model_admin in models.items():
-            app_label = model._meta.app_label
+            custom_model = model.__name__ in custom_models.keys()
+            if custom_model:
+                app_label = custom_models[model.__name__]
+            else:
+                app_label = model._meta.app_label
 
             has_module_perms = model_admin.has_module_permission(request)
             if not has_module_perms:
@@ -265,26 +217,37 @@ class AdminSite(BaseAdminSite):
             if perms.get('change') or perms.get('view'):
                 model_dict['view_only'] = not perms.get('change')
                 try:
-                    model_dict['admin_url'] = reverse('admin:%s_%s_changelist' % info, current_app=self.name)
+                    model_dict['admin_url'] = reverse('custom_admin:%s_%s_changelist' % info, current_app=self.name)
                 except NoReverseMatch:
                     pass
             if perms.get('add'):
                 try:
-                    model_dict['add_url'] = reverse('admin:%s_%s_add' % info, current_app=self.name)
+                    model_dict['add_url'] = reverse('custom_admin:%s_%s_add' % info, current_app=self.name)
                 except NoReverseMatch:
                     pass
 
             if app_label in app_dict:
                 app_dict[app_label]['models'].append(model_dict)
             else:
-                app_dict[app_label] = {
-                    'name': apps.get_app_config(app_label).verbose_name,
-                    'app_label': app_label,
-                    'app_url': reverse(
-                        'admin:app_list',
+                if custom_model:
+                    app_name = app_label
+                    app_url = ''
+                else:
+                    app_name = apps.get_app_config(app_label).verbose_name
+
+                try:
+                    app_url = reverse(
+                        'custom_admin:app_list',
                         kwargs={'app_label': app_label},
                         current_app=self.name,
-                    ),
+                    )
+                except NoReverseMatch:
+                    pass
+
+                app_dict[app_label] = {
+                    'name': app_name,
+                    'app_label': app_label,
+                    'app_url': app_url,
                     'has_module_perms': has_module_perms,
                     'models': [model_dict],
                 }
@@ -293,48 +256,16 @@ class AdminSite(BaseAdminSite):
             return app_dict.get(label)
         return app_dict
 
-    def get_app_list(self, request):
-        """
-        Return a sorted list of all the installed apps that have been
-        registered in this site.
-        """
-        app_dict = self._build_app_dict(request)
-
-        # Sort the apps alphabetically.
-        app_list = sorted(app_dict.values(), key=lambda x: x['name'].lower())
-
-        # Sort the models alphabetically within each app.
-        for app in app_list:
-            app['models'].sort(key=lambda x: x['name'])
-
-        return app_list
-
-    @never_cache
-    def index(self, request, extra_context=None):
-        """
-        Display the main admin index page, which lists all of the installed
-        apps that have been registered in this site.
-        """
-        app_list = self.get_app_list(request)
-
-        context = {
-            **self.each_context(request),
-            'title': self.index_title,
-            'app_list': app_list,
-            **(extra_context or {}),
-        }
-
-        request.current_app = self.name
-
-        return TemplateResponse(request, self.index_template or 'custom_admin/index.html', context)
-
     def app_index(self, request, app_label, extra_context=None):
         app_dict = self._build_app_dict(request, app_label)
         if not app_dict:
             raise Http404('The requested admin page does not exist.')
         # Sort the models alphabetically within each app.
         app_dict['models'].sort(key=lambda x: x['name'])
-        app_name = apps.get_app_config(app_label).verbose_name
+        if app_label.capitalize() in self._get_custom_apps_list():
+            app_name = app_label
+        else:
+            app_name = apps.get_app_config(app_label).verbose_name
         context = {
             **self.each_context(request),
             'title': _('%(app)s administration') % {'app': app_name},

@@ -5,13 +5,14 @@
 
 {% if not is_popup %}
 {% block breadcrumbs %}
-<div class="breadcrumbs">
-<a href="{% url 'custom_admin:index' %}">{% trans 'Home' %}</a>
-&rsaquo;
-{% for app in app_list %}
-{{ app.name }}
-{% endfor %}
-</div>
+  <nav class="breadcrumb" aria-label="breadcrumbs">
+    <ul>
+      <li><a href="{% url 'custom_admin:index' %}">{% trans 'Home' %}</a></li>
+      {% for app in app_list %}
+        <li class="is-active"><a href="#" aria-current="page">{{ app.name }}</a></li>
+      {% endfor %}
+    </ul>
+  </nav>
 {% endblock %}
 {% endif %}
 

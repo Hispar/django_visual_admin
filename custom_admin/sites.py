@@ -21,7 +21,7 @@ from django.views.i18n import JavaScriptCatalog
 from django.contrib.admin.sites import AdminSite as BaseAdminSite
 
 from custom_admin.utils import flatten
-from django_visual_admin.admin import CONFIGURATION
+from django_visual_admin.admin import CONFIGURATION, APP_CONFIGURATION, MODEL_CONFIGURATION
 
 all_sites = WeakSet()
 
@@ -33,6 +33,19 @@ class AdminSite(BaseAdminSite):
     def __init__(self, name='custom_admin'):
         super().__init__(name)
         self.custom_registry = dict()
+
+    @staticmethod
+    def _get_custom_apps_models():
+        return MODEL_CONFIGURATION
+
+    @staticmethod
+    def _get_custom_models_list_by_app(app_label):
+        return [app_model for app_model, app_key in MODEL_CONFIGURATION.items() if
+                APP_CONFIGURATION[app_key]['slug'] == app_label]
+
+    @staticmethod
+    def _get_custom_apps():
+        return APP_CONFIGURATION
 
     # def admin_view(self, view, cacheable=False):
     #     """
@@ -113,7 +126,8 @@ class AdminSite(BaseAdminSite):
             ),
         ]
 
-        custom_models = self._get_custom_apps_map()
+        custom_models = self._get_custom_apps_models()
+        custom_apps = self._get_custom_apps()
 
         # Add in each model's views, and create a list of valid URLS for the
         # app_index
@@ -129,13 +143,16 @@ class AdminSite(BaseAdminSite):
                     valid_app_labels.append(model._meta.app_label)
 
         for model, app in custom_models.items():
-            if model not in self.custom_registry.keys():
+            if model not in self.custom_registry.keys() or app not in custom_apps.keys():
                 continue
+
+            app_slug = custom_apps[app]['slug'] if 'slug' in custom_apps[app] else app.lower()
+
             urlpatterns += [
-                path('%s/%s/' % (app.lower(), model.lower()), include(self.custom_registry[model].urls)),
+                path('%s/%s/' % (app_slug, model.lower()), include(self.custom_registry[model].urls)),
             ]
-            if app.lower() not in valid_app_labels:
-                valid_app_labels.append(app.lower())
+            if app_slug not in valid_app_labels:
+                valid_app_labels.append(app_slug)
 
         # If there were ModelAdmins registered, we should have a list of app
         # labels for which we need to allow access to the app_index view,
@@ -151,21 +168,6 @@ class AdminSite(BaseAdminSite):
     def urls(self):
         return self.get_urls(), 'custom_admin', self.name
 
-    @staticmethod
-    def _get_custom_apps_map():
-        return {app_model: app_key.lower() for app in CONFIGURATION for app_key, app_values in app.items() for
-                app_sub_key, app_data in app_values.items() if app_sub_key == 'models' for app_model in app_data}
-
-    @staticmethod
-    def _get_custom_models_list_by_app(app_label):
-        return [app_model for app in CONFIGURATION for app_key, app_values in app.items() if
-                app_key.lower() == app_label for
-                app_sub_key, app_data in app_values.items() if app_sub_key == 'models' for app_model in app_data]
-
-    @staticmethod
-    def _get_custom_apps_list():
-        return [app_key for app in CONFIGURATION for app_key in app.keys()]
-
     def _build_app_dict(self, request, label=None):
         """
         Build the app dictionary. The optional `label` parameter filters models
@@ -173,7 +175,8 @@ class AdminSite(BaseAdminSite):
         """
         app_dict = {}
 
-        custom_models = self._get_custom_apps_map()
+        custom_models = self._get_custom_apps_models()
+        custom_apps = self._get_custom_apps()
 
         if label:
             models = {
@@ -191,7 +194,7 @@ class AdminSite(BaseAdminSite):
         for model, model_admin in models.items():
             custom_model = model.__name__ in custom_models.keys()
             if custom_model:
-                app_label = custom_models[model.__name__]
+                app_label = custom_apps[custom_models[model.__name__]]['slug']
             else:
                 app_label = model._meta.app_label
 
@@ -219,6 +222,7 @@ class AdminSite(BaseAdminSite):
                 try:
                     model_dict['admin_url'] = reverse('custom_admin:%s_%s_changelist' % info, current_app=self.name)
                 except NoReverseMatch:
+                    # print(info)
                     pass
             if perms.get('add'):
                 try:
@@ -262,10 +266,11 @@ class AdminSite(BaseAdminSite):
             raise Http404('The requested admin page does not exist.')
         # Sort the models alphabetically within each app.
         app_dict['models'].sort(key=lambda x: x['name'])
-        if app_label.capitalize() in self._get_custom_apps_list():
+        if app_label in self._get_custom_apps().keys():
             app_name = app_label
         else:
             app_name = apps.get_app_config(app_label).verbose_name
+
         context = {
             **self.each_context(request),
             'title': _('%(app)s administration') % {'app': app_name},

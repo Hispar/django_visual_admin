@@ -47,6 +47,13 @@ class AdminSite(BaseAdminSite):
     def _get_custom_apps():
         return APP_CONFIGURATION
 
+    @staticmethod
+    def _get_custom_apps_keys(lowercase=False):
+        keys = APP_CONFIGURATION.keys()
+        if not lowercase:
+            return keys
+        return map(lambda el: el.lower(), keys)
+
     # def admin_view(self, view, cacheable=False):
     #     """
     #     Decorator to create an admin view attached to this ``AdminSite``. This
@@ -266,7 +273,7 @@ class AdminSite(BaseAdminSite):
             raise Http404('The requested admin page does not exist.')
         # Sort the models alphabetically within each app.
         app_dict['models'].sort(key=lambda x: x['name'])
-        if app_label in self._get_custom_apps().keys():
+        if app_label.lower() in self._get_custom_apps_keys(lowercase=True):
             app_name = app_label
         else:
             app_name = apps.get_app_config(app_label).verbose_name

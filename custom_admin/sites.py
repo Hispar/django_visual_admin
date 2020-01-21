@@ -229,8 +229,10 @@ class AdminSite(BaseAdminSite):
                 try:
                     model_dict['admin_url'] = reverse('custom_admin:%s_%s_changelist' % info, current_app=self.name)
                 except NoReverseMatch:
-                    # print(info)
-                    pass
+                    try:
+                        model_dict['admin_url'] = reverse('custom_admin:%s_%s_changelist' % (model._meta.app_label, model._meta.model_name), current_app=self.name)
+                    except NoReverseMatch:
+                        pass
             if perms.get('add'):
                 try:
                     model_dict['add_url'] = reverse('custom_admin:%s_%s_add' % info, current_app=self.name)

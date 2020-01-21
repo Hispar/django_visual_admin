@@ -7,7 +7,7 @@ from django.contrib.admin.filters import (
     RelatedOnlyFieldListFilter, SimpleListFilter,
 )
 from django.contrib.admin.helpers import ACTION_CHECKBOX_NAME
-from django.contrib.admin.options import (
+from custom_admin.options import (
     HORIZONTAL, VERTICAL, ModelAdmin, StackedInline, TabularInline,
 )
 from custom_admin.sites import AdminSite, site

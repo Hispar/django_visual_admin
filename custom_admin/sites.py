@@ -2,7 +2,7 @@ from functools import update_wrapper
 from weakref import WeakSet
 
 from django.apps import apps
-from django.contrib.admin import ModelAdmin, actions
+from django.contrib.admin import actions
 from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
 from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
 from django.core.exceptions import ImproperlyConfigured

@@ -5,11 +5,16 @@
 from django.contrib import admin
 
 # Custom admin imports
+from custom_admin import ModelAdmin
 from custom_admin.admin import admin_site
 
 # App imports
 from test_project.ingredients.models import Ingredient
 
+
+class IngredientCustomAdmin(ModelAdmin):
+    list_display = ('id', 'name')
+    list_display_links = ('id', 'name')
 
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('id', 'name')
@@ -17,4 +22,4 @@ class IngredientAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Ingredient, IngredientAdmin)
-admin_site.register(Ingredient, IngredientAdmin)
+admin_site.register(Ingredient, IngredientCustomAdmin)

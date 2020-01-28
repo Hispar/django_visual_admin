@@ -9,6 +9,7 @@
 # )
 # from django.core.exceptions import ObjectDoesNotExist
 # from django.db import models
+from django.contrib.admin.templatetags.admin_list import admin_actions
 from django.template import Library
 # from django.template.loader import get_template
 # from django.templatetags.static import static
@@ -24,6 +25,7 @@ from .base import InclusionAdminNode
 register = Library()
 
 DOT = '.'
+
 
 #
 # @register.simple_tag
@@ -461,22 +463,15 @@ DOT = '.'
 #     })
 #
 #
-# def admin_actions(context):
-#     """
-#     Track the number of times the action field has been rendered on the page,
-#     so we know which value to use.
-#     """
-#     context['action_index'] = context.get('action_index', -1) + 1
-#     return context
-#
-#
-# @register.tag(name='admin_actions')
-# def admin_actions_tag(parser, token):
-#     return InclusionAdminNode(parser, token, func=admin_actions, template_name='actions.html')
+
+
+@register.tag(name='admin_actions')
+def admin_actions_tag(parser, token):
+    return InclusionAdminNode(parser, token, func=admin_actions, template_name='actions.html')
 
 
 @register.tag(name='custom_change_list_object_tools')
-def custom_change_list_object_tools_tag(parser, token):
+def change_list_object_tools_tag(parser, token):
     """Display the row of change list object tools."""
     return InclusionAdminNode(
         parser, token,

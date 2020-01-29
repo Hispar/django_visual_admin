@@ -51,6 +51,8 @@ from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import RedirectView
 
+from custom_admin.helpers import InlineAdminFormSet
+
 IS_POPUP_VAR = '_popup'
 TO_FIELD_VAR = '_to_field'
 
@@ -1459,23 +1461,23 @@ class ModelAdmin(DjangoModelAdmin):
     #         context,
     #     )
     #
-    # def get_inline_formsets(self, request, formsets, inline_instances, obj=None):
-    #     inline_admin_formsets = []
-    #     for inline, formset in zip(inline_instances, formsets):
-    #         fieldsets = list(inline.get_fieldsets(request, obj))
-    #         readonly = list(inline.get_readonly_fields(request, obj))
-    #         has_add_permission = inline._has_add_permission(request, obj)
-    #         has_change_permission = inline.has_change_permission(request, obj)
-    #         has_delete_permission = inline.has_delete_permission(request, obj)
-    #         has_view_permission = inline.has_view_permission(request, obj)
-    #         prepopulated = dict(inline.get_prepopulated_fields(request, obj))
-    #         inline_admin_formset = helpers.InlineAdminFormSet(
-    #             inline, formset, fieldsets, prepopulated, readonly, model_admin=self,
-    #             has_add_permission=has_add_permission, has_change_permission=has_change_permission,
-    #             has_delete_permission=has_delete_permission, has_view_permission=has_view_permission,
-    #         )
-    #         inline_admin_formsets.append(inline_admin_formset)
-    #     return inline_admin_formsets
+    def get_inline_formsets(self, request, formsets, inline_instances, obj=None):
+        inline_admin_formsets = []
+        for inline, formset in zip(inline_instances, formsets):
+            fieldsets = list(inline.get_fieldsets(request, obj))
+            readonly = list(inline.get_readonly_fields(request, obj))
+            has_add_permission = inline._has_add_permission(request, obj)
+            has_change_permission = inline.has_change_permission(request, obj)
+            has_delete_permission = inline.has_delete_permission(request, obj)
+            has_view_permission = inline.has_view_permission(request, obj)
+            prepopulated = dict(inline.get_prepopulated_fields(request, obj))
+            inline_admin_formset = InlineAdminFormSet(
+                inline, formset, fieldsets, prepopulated, readonly, model_admin=self,
+                has_add_permission=has_add_permission, has_change_permission=has_change_permission,
+                has_delete_permission=has_delete_permission, has_view_permission=has_view_permission,
+            )
+            inline_admin_formsets.append(inline_admin_formset)
+        return inline_admin_formsets
     #
     # def get_changeform_initial_data(self, request):
     #     """

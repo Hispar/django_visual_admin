@@ -9,7 +9,7 @@
 # )
 # from django.core.exceptions import ObjectDoesNotExist
 # from django.db import models
-from django.contrib.admin.templatetags.admin_list import admin_actions
+from django.contrib.admin.templatetags.admin_list import admin_actions, result_list
 from django.template import Library
 # from django.template.loader import get_template
 # from django.templatetags.static import static
@@ -324,32 +324,18 @@ DOT = '.'
 #                 yield mark_safe(form[cl.model._meta.pk.name])
 #
 #
-# def result_list(cl):
-#     """
-#     Display the headers and data list together.
-#     """
-#     headers = list(result_headers(cl))
-#     num_sorted_fields = 0
-#     for h in headers:
-#         if h['sortable'] and h['sorted']:
-#             num_sorted_fields += 1
-#     return {
-#         'cl': cl,
-#         'result_hidden_fields': list(result_hidden_fields(cl)),
-#         'result_headers': headers,
-#         'num_sorted_fields': num_sorted_fields,
-#         'results': list(results(cl)),
-#     }
 #
 #
-# @register.tag(name='result_list')
-# def result_list_tag(parser, token):
-#     return InclusionAdminNode(
-#         parser, token,
-#         func=result_list,
-#         template_name='change_list_results.html',
-#         takes_context=False,
-#     )
+@register.tag(name='custom_result_list')
+def result_list_tag(parser, token):
+    return InclusionAdminNode(
+        parser, token,
+        func=result_list,
+        template_name='change_list_results.html',
+        takes_context=False,
+    )
+
+
 #
 #
 # def date_hierarchy(cl):

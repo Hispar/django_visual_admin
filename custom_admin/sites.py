@@ -2,26 +2,16 @@ from functools import update_wrapper
 from weakref import WeakSet
 
 from django.apps import apps
-from django.contrib.admin import actions
-from django.contrib.admin.sites import AlreadyRegistered, NotRegistered
-from django.contrib.auth import REDIRECT_FIELD_NAME, get_user_model
-from django.core.exceptions import ImproperlyConfigured
-from django.db.models.base import ModelBase
-from django.http import Http404, HttpResponseRedirect
+from django.contrib.admin.sites import AdminSite as BaseAdminSite
+from django.http import Http404
 from django.template.response import TemplateResponse
 from django.urls import NoReverseMatch, reverse
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst
-from django.utils.translation import gettext as _, gettext_lazy
-from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect
-from django.views.i18n import JavaScriptCatalog
+from django.utils.translation import gettext as _
 
-from django.contrib.admin.sites import AdminSite as BaseAdminSite
-
-from custom_admin.utils import flatten
-from django_visual_admin.admin import CONFIGURATION, APP_CONFIGURATION, MODEL_CONFIGURATION
+from django_visual_admin.admin import APP_CONFIGURATION, MODEL_CONFIGURATION
 
 all_sites = WeakSet()
 
@@ -54,58 +44,12 @@ class AdminSite(BaseAdminSite):
             return keys
         return map(lambda el: el.lower(), keys)
 
-    # def admin_view(self, view, cacheable=False):
-    #     """
-    #     Decorator to create an admin view attached to this ``AdminSite``. This
-    #     wraps the view and provides permission checking by calling
-    #     ``self.has_permission``.
-    #
-    #     You'll want to use this from within ``AdminSite.get_urls()``:
-    #
-    #         class MyAdminSite(AdminSite):
-    #
-    #             def get_urls(self):
-    #                 from django.urls import path
-    #
-    #                 urls = super().get_urls()
-    #                 urls += [
-    #                     path('my_view/', self.admin_view(some_view))
-    #                 ]
-    #                 return urls
-    #
-    #     By default, admin_views are marked non-cacheable using the
-    #     ``never_cache`` decorator. If the view can be safely cached, set
-    #     cacheable=True.
-    #     """
-    #
-    #     def inner(request, *args, **kwargs):
-    #         if not self.has_permission(request):
-    #             if request.path == reverse('admin:logout', current_app=self.name):
-    #                 index_path = reverse('admin:index', current_app=self.name)
-    #                 return HttpResponseRedirect(index_path)
-    #             # Inner import to prevent django.contrib.admin (app) from
-    #             # importing django.contrib.auth.models.User (unrelated model).
-    #             from django.contrib.auth.views import redirect_to_login
-    #             return redirect_to_login(
-    #                 request.get_full_path(),
-    #                 reverse('admin:login', current_app=self.name)
-    #             )
-    #         return view(request, *args, **kwargs)
-    #
-    #     if not cacheable:
-    #         inner = never_cache(inner)
-    #     # We add csrf_protect here so this function can be used as a utility
-    #     # function for any view, without having to repeat 'csrf_protect'.
-    #     if not getattr(view, 'csrf_exempt', False):
-    #         inner = csrf_protect(inner)
-    #     return update_wrapper(inner, view)
-
     def get_urls(self):
-        from django.urls import include, path, re_path
         # Since this module gets imported in the application's root package,
         # it cannot import models from other applications at the module level,
         # and django.contrib.contenttypes.views imports ContentType.
         from django.contrib.contenttypes import views as contenttype_views
+        from django.urls import include, path, re_path
 
         def wrap(view, cacheable=False):
             def wrapper(*args, **kwargs):
@@ -125,7 +69,8 @@ class AdminSite(BaseAdminSite):
                 wrap(self.password_change_done, cacheable=True),
                 name='password_change_done',
             ),
-            path('jsi18n/', wrap(self.i18n_javascript, cacheable=True), name='jsi18n'),
+            path("autocomplete/", wrap(self.autocomplete_view), name="autocomplete"),
+            # path('jsi18n/', wrap(self.i18n_javascript, cacheable=True), name='jsi18n'),
             path(
                 'r/<int:content_type_id>/<path:object_id>/',
                 wrap(contenttype_views.shortcut),
@@ -168,6 +113,9 @@ class AdminSite(BaseAdminSite):
             urlpatterns += [
                 re_path(regex, wrap(self.app_index), name='app_list'),
             ]
+
+        if self.final_catch_all_view:
+            urlpatterns.append(re_path(r"(?P<url>.*)$", wrap(self.catch_all_view)))
 
         return urlpatterns
 
@@ -230,7 +178,9 @@ class AdminSite(BaseAdminSite):
                     model_dict['admin_url'] = reverse('custom_admin:%s_%s_changelist' % info, current_app=self.name)
                 except NoReverseMatch:
                     try:
-                        model_dict['admin_url'] = reverse('custom_admin:%s_%s_changelist' % (model._meta.app_label, model._meta.model_name), current_app=self.name)
+                        model_dict['admin_url'] = reverse(
+                            'custom_admin:%s_%s_changelist' % (model._meta.app_label, model._meta.model_name),
+                            current_app=self.name)
                     except NoReverseMatch:
                         pass
             if perms.get('add'):
@@ -255,6 +205,7 @@ class AdminSite(BaseAdminSite):
                         current_app=self.name,
                     )
                 except NoReverseMatch:
+                    app_url = ''
                     pass
 
                 app_dict[app_label] = {
@@ -291,15 +242,24 @@ class AdminSite(BaseAdminSite):
         request.current_app = self.name
 
         return TemplateResponse(request, self.app_index_template or [
-            'admin/%s/app_index.html' % app_label,
-            'admin/app_index.html'
+            'custom_admin/%s/app_index.html' % app_label,
+            'custom_admin/app_index.html'
         ], context)
+
+    def index(self, request, extra_context=None):
+        if extra_context is None:
+            extra_context = {'has_sidebar': True}
+        extra_context['has_sidebar'] = True
+        return super(AdminSite, self).index(request, extra_context)
 
 
 class DefaultAdminSite(LazyObject):
     def _setup(self):
         AdminSiteClass = import_string(apps.get_app_config('custom_admin').default_site)
         self._wrapped = AdminSiteClass()
+
+    def __repr__(self):
+        return repr(self._wrapped)
 
 
 # This global object represents the default admin site, for the common case.

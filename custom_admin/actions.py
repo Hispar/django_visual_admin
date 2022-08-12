@@ -4,10 +4,11 @@ Built-in, globally-available admin actions.
 
 from django.contrib import messages
 from custom_admin import helpers
-from django.contrib.admin.utils import model_ngettext
 from django.core.exceptions import PermissionDenied
 from django.template.response import TemplateResponse
 from django.utils.translation import gettext as _, gettext_lazy
+
+from custom_admin.utils import model_ngettext
 
 
 def delete_selected(modeladmin, request, queryset):

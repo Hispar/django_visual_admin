@@ -2,10 +2,6 @@ import json
 
 from django import forms
 from django.conf import settings
-from django.contrib.admin.utils import (
-    display_for_field, flatten_fieldsets, help_text_for_field, label_for_field,
-    lookup_field,
-)
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields.related import ManyToManyRel
 from django.forms.utils import flatatt
@@ -13,6 +9,8 @@ from django.template.defaultfilters import capfirst, linebreaksbr
 from django.utils.html import conditional_escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext, gettext_lazy as _
+
+from custom_admin.utils import help_text_for_field, lookup_field, display_for_field, label_for_field, flatten_fieldsets
 
 ACTION_CHECKBOX_NAME = '_selected_action'
 
@@ -81,7 +79,7 @@ class Fieldset:
     def media(self):
         if 'collapse' in self.classes:
             extra = '' if settings.DEBUG else '.min'
-            return forms.Media(js=['admin/js/collapse%s.js' % extra])
+            return forms.Media(js=['custom_admin/js/collapse%s.js' % extra])
         return forms.Media()
 
     def __iter__(self):
@@ -146,7 +144,7 @@ class AdminField:
         )
 
     def errors(self):
-        return mark_safe(self.field.errors.as_ul())
+        return ', '.join([mark_safe(error.message) for error in self.field.errors.as_data()])
 
 
 class AdminReadonlyField:
@@ -224,6 +222,7 @@ class InlineAdminFormSet:
     """
     A wrapper around an inline formset for use in the admin system.
     """
+
     def __init__(self, inline, formset, fieldsets, prepopulated_fields=None,
                  readonly_fields=None, model_admin=None, has_add_permission=True,
                  has_change_permission=True, has_delete_permission=True,
@@ -331,6 +330,7 @@ class InlineAdminForm(AdminForm):
     """
     A wrapper around an inline form for use in the admin system.
     """
+
     def __init__(self, formset, form, fieldsets, prepopulated_fields, original,
                  readonly_fields=None, model_admin=None, view_on_site_url=None):
         self.formset = formset
@@ -350,12 +350,12 @@ class InlineAdminForm(AdminForm):
     def needs_explicit_pk_field(self):
         return (
             # Auto fields are editable, so check for auto or non-editable pk.
-            self.form._meta.model._meta.auto_field or not self.form._meta.model._meta.pk.editable or
-            # Also search any parents for an auto field. (The pk info is
-            # propagated to child models so that does not need to be checked
-            # in parents.)
-            any(parent._meta.auto_field or not parent._meta.model._meta.pk.editable
-                for parent in self.form._meta.model._meta.get_parent_list())
+                self.form._meta.model._meta.auto_field or not self.form._meta.model._meta.pk.editable or
+                # Also search any parents for an auto field. (The pk info is
+                # propagated to child models so that does not need to be checked
+                # in parents.)
+                any(parent._meta.auto_field or not parent._meta.model._meta.pk.editable
+                    for parent in self.form._meta.model._meta.get_parent_list())
         )
 
     def pk_field(self):
@@ -391,6 +391,7 @@ class InlineFieldset(Fieldset):
 
 class AdminErrorList(forms.utils.ErrorList):
     """Store errors for the form/formsets in an add/change view."""
+
     def __init__(self, form, inline_formsets):
         super().__init__()
 

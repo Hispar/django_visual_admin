@@ -86,8 +86,8 @@ def submit_row_tag(parser, token):
     return InclusionAdminNode(parser, token, func=submit_row, template_name='submit_line.html')
 
 
-@register.tag(name='change_form_object_tools')
-def change_form_object_tools_tag(parser, token):
+@register.tag(name='custom_change_form_object_tools')
+def custom_change_form_object_tools_tag(parser, token):
     """Display the row of change form object tools."""
     return InclusionAdminNode(
         parser, token,

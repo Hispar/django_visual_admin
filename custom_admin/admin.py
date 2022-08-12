@@ -1,10 +1,4 @@
-# -*- coding: utf-8 -*-
-# Python imports
-
-# 3rd Party imports
 from django.contrib.auth import get_user_model
-
-# App imports
 from django.contrib.auth.models import Group
 
 from custom_admin import AdminSite

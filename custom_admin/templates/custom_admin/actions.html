@@ -1,51 +1,53 @@
 {% load i18n %}
 <div class="actions">
-  {% block actions %}
-    <div class="field is-horizontal is-grouped">
-    {% block actions-form %}
-      {% for field in action_form %}
-        {% if field.label %}
-          <div class="field-label is-normal">
-              <label class="label">{{ field.label }}</label>
-            </div>
-        {% endif %}
-        {% if field.label %}
-          <div class="control is-horizontal">
-              <div class="select">
-                {{ field }}
-              </div>
-          </div>
-        {% endif %}
-      {% endfor %}
-    {% endblock %}
-    {% block actions-submit %}
-      <div class="field is-horizontal is-grouped">
-        <div class="field-label"></div>
-        <div class="control is-horizontal">
-          <button type="submit" class="button is-link" title="{% trans "Run the selected action" %}" name="index"
-                  value="{{ action_index|default:0 }}">{% trans "Go" %}</button>
-        </div>
-      </div>
-    {% endblock %}
-    {% block actions-counter %}
-      {% if actions_selection_counter %}
+    {% block actions %}
         <div class="field is-horizontal is-grouped">
-          <div class="field-label"></div>
-          <div class="control is-horizontal">
-          <span class="action-counter" data-actions-icnt="{{ cl.result_list|length }}">{{ selection_note }}</span>
-          {% if cl.result_count != cl.result_list|length %}
-            <span class="all">{{ selection_note_all }}</span>
-            <span class="question">
+            {% block actions-form %}
+                {% for field in action_form %}
+                    {% if field.label %}
+                        <div class="field-label is-normal">
+                            <label class="label">{{ field.label }}</label>
+                        </div>
+                    {% endif %}
+                    {% if field.label %}
+                        <div class="control is-horizontal">
+                            <div class="select">
+                                {{ field }}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endblock %}
+            {% block actions-submit %}
+                <div class="field is-horizontal is-grouped">
+                    <div class="field-label"></div>
+                    <div class="control is-horizontal">
+                        <button type="submit" class="button is-link" title="{% trans "Run the selected action" %}"
+                                name="index"
+                                value="{{ action_index|default:0 }}">{% trans "Go" %}</button>
+                    </div>
+                </div>
+            {% endblock %}
+            {% block actions-counter %}
+                {% if actions_selection_counter %}
+                    <div class="field is-horizontal is-grouped">
+                        <div class="field-label"></div>
+                        <div class="control is-horizontal">
+                            <span class="action-counter"
+                                  data-actions-icnt="{{ cl.result_list|length }}">{{ selection_note }}</span>
+                            {% if cl.result_count != cl.result_list|length %}
+                                <span class="all">{{ selection_note_all }}</span>
+                                <span class="question">
               <a href="#"
                  title="{% trans "Click here to select the objects across all pages" %}">{% blocktrans with cl.result_count as total_count %}
-                Select all {{ total_count }} {{ module_name }}{% endblocktrans %}</a>
+                  Select all {{ total_count }} {{ module_name }}{% endblocktrans %}</a>
           </span>
-            <span class="clear"><a href="#">{% trans "Clear selection" %}</a></span>
-          {% endif %}
-          </div>
+                                <span class="clear"><a href="#">{% trans "Clear selection" %}</a></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endblock %}
         </div>
-      {% endif %}
     {% endblock %}
-    </div>
-  {% endblock %}
 </div>

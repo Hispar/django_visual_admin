@@ -30,6 +30,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'custom_admin',
+    # 'admin3',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -37,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'test_project.ingredients',
-    'test_project.recipes'
+    'test_project.recipes',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -119,3 +121,5 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "custom_admin/static"),
 ]
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

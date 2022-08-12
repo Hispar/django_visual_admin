@@ -1,14 +1,46 @@
-{% load i18n admin_urls %}
-<div class="submit-row">
+{% load i18n custom_admin_urls %}
+
 {% block submit-row %}
-{% if show_save %}<input type="submit" value="{% trans 'Save' %}" class="default" name="_save">{% endif %}
-{% if show_delete_link and original %}
-    {% url opts|custom_admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
-    <p class="deletelink-box"><a href="{% add_preserved_filters delete_url %}" class="deletelink">{% trans "Delete" %}</a></p>
-{% endif %}
-{% if show_save_as_new %}<input type="submit" value="{% trans 'Save as new' %}" name="_saveasnew">{% endif %}
-{% if show_save_and_add_another %}<input type="submit" value="{% trans 'Save and add another' %}" name="_addanother">{% endif %}
-{% if show_save_and_continue %}<input type="submit" value="{% if can_change %}{% trans 'Save and continue editing' %}{% else %}{% trans 'Save and view' %}{% endif %}" name="_continue">{% endif %}
-{% if show_close %}<a href="{% url opts|custom_admin_urlname:'changelist' %}" class="closelink">{% trans 'Close' %}</a>{% endif %}
+    <nav class="navbar is-fixed-bottom" role="navigation" aria-label="navigation">
+        <div class="navbar-menu is-active">
+            <div class="navbar-end">
+                {% if show_save %}
+                    <div class="navbar-item">
+                        <input type="submit" value="{% trans 'Save' %}" class="button is-primary" name="_save">
+                    </div>
+                {% endif %}
+                {% if show_delete_link and original %}
+                    {% url opts|custom_admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
+                    <div class="navbar-item">
+                        <a href="{% add_preserved_filters delete_url %}"
+                           class="deletelink button is-danger">{% trans "Delete" %}</a>
+                    </div>
+                {% endif %}
+                {% if show_save_as_new %}
+                    <div class="navbar-item">
+                        <input type="submit" value="{% trans 'Save as new' %}" class="button is-info" name="_saveasnew">
+                    </div>
+                {% endif %}
+                {% if show_save_and_add_another %}
+                    <div class="navbar-item">
+                        <input type="submit" value="{% trans 'Save and add another' %}" class="button is-info" name="_addanother">
+                    </div>
+                {% endif %}
+                {% if show_save_and_continue %}
+                    <div class="navbar-item">
+                        {% if can_change %}
+                            <input type="submit" value="{% trans 'Save and continue editing' %}" class="button is-info"  name="_continue">
+                        {% else %}
+                            <input type="submit" value="{% trans 'Save and view' %}" class="button is-info"  name="_continue">
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% if show_close %}
+                    <div class="navbar-item">
+                        <a href="{% url opts|custom_admin_urlname:'changelist' %}" class="button closelink">{% trans 'Close' %}</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
 {% endblock %}
-</div>

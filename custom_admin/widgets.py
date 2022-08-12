@@ -24,6 +24,7 @@ class FilteredSelectMultiple(forms.SelectMultiple):
     Note that the resulting JavaScript assumes that the jsi18n
     catalog has been loaded in the page
     """
+
     @property
     def media(self):
         extra = '' if settings.DEBUG else '.min'
@@ -54,24 +55,24 @@ class FilteredSelectMultiple(forms.SelectMultiple):
 class AdminDateWidget(forms.DateInput):
     class Media:
         js = [
-            'admin/js/calendar.js',
-            'admin/js/admin/DateTimeShortcuts.js',
+            'custom_admin/js/calendar.js',
+            'custom_admin/js/admin/DateTimeShortcuts.js',
         ]
 
     def __init__(self, attrs=None, format=None):
-        attrs = {'class': 'vDateField', 'size': '10', **(attrs or {})}
+        attrs = {'class': 'input', 'size': '10', **(attrs or {})}
         super().__init__(attrs=attrs, format=format)
 
 
 class AdminTimeWidget(forms.TimeInput):
     class Media:
         js = [
-            'admin/js/calendar.js',
-            'admin/js/admin/DateTimeShortcuts.js',
+            'custom_admin/js/calendar.js',
+            'custom_admin/js/admin/DateTimeShortcuts.js',
         ]
 
     def __init__(self, attrs=None, format=None):
-        attrs = {'class': 'vTimeField', 'size': '8', **(attrs or {})}
+        attrs = {'class': 'input', 'size': '8', **(attrs or {})}
         super().__init__(attrs=attrs, format=format)
 
 
@@ -79,7 +80,7 @@ class AdminSplitDateTime(forms.SplitDateTimeWidget):
     """
     A SplitDateTime Widget that has some admin-specific styling.
     """
-    template_name = 'admin/widgets/split_datetime.html'
+    template_name = 'custom_admin/widgets/split_datetime.html'
 
     def __init__(self, attrs=None):
         widgets = [AdminDateWidget, AdminTimeWidget]
@@ -95,11 +96,15 @@ class AdminSplitDateTime(forms.SplitDateTimeWidget):
 
 
 class AdminRadioSelect(forms.RadioSelect):
-    template_name = 'admin/widgets/radio.html'
+    template_name = 'custom_admin/widgets/radio.html'
 
 
 class AdminFileWidget(forms.ClearableFileInput):
-    template_name = 'admin/widgets/clearable_file_input.html'
+    template_name = 'custom_admin/widgets/clearable_file_input.html'
+
+    def __init__(self, attrs=None):
+        attrs = {'class': 'file-input', **(attrs or {})}
+        super().__init__(attrs=attrs)
 
 
 def url_params_from_lookup_dict(lookups):
@@ -127,7 +132,7 @@ class ForeignKeyRawIdWidget(forms.TextInput):
     A Widget for displaying ForeignKeys in the "raw_id" interface rather than
     in a <select> box.
     """
-    template_name = 'admin/widgets/foreign_key_raw_id.html'
+    template_name = 'custom_admin/widgets/foreign_key_raw_id.html'
 
     def __init__(self, rel, admin_site, attrs=None, using=None):
         self.rel = rel
@@ -141,7 +146,7 @@ class ForeignKeyRawIdWidget(forms.TextInput):
         if rel_to in self.admin_site._registry:
             # The related object is registered with the same AdminSite
             related_url = reverse(
-                'admin:%s_%s_changelist' % (
+                'custom_admin:%s_%s_changelist' % (
                     rel_to._meta.app_label,
                     rel_to._meta.model_name,
                 ),
@@ -202,7 +207,7 @@ class ManyToManyRawIdWidget(ForeignKeyRawIdWidget):
     A Widget for displaying ManyToMany ids in the "raw_id" interface rather than
     in a <select multiple> box.
     """
-    template_name = 'admin/widgets/many_to_many_raw_id.html'
+    template_name = 'custom_admin/widgets/many_to_many_raw_id.html'
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
@@ -231,7 +236,7 @@ class RelatedFieldWidgetWrapper(forms.Widget):
     This class is a wrapper to a given widget to add the add icon for the
     admin interface.
     """
-    template_name = 'admin/widgets/related_widget_wrapper.html'
+    template_name = 'custom_admin/widgets/related_widget_wrapper.html'
 
     def __init__(self, widget, rel, admin_site, can_add_related=None,
                  can_change_related=False, can_delete_related=False,
@@ -272,7 +277,7 @@ class RelatedFieldWidgetWrapper(forms.Widget):
         return self.widget.media
 
     def get_related_url(self, info, action, *args):
-        return reverse("admin:%s_%s_%s" % (info + (action,)),
+        return reverse("custom_admin:%s_%s_%s" % (info + (action,)),
                        current_app=self.admin_site.name, args=args)
 
     def get_context(self, name, value, attrs):
@@ -315,21 +320,21 @@ class RelatedFieldWidgetWrapper(forms.Widget):
 
 class AdminTextareaWidget(forms.Textarea):
     def __init__(self, attrs=None):
-        super().__init__(attrs={'class': 'vLargeTextField', **(attrs or {})})
+        super().__init__(attrs={'class': 'textarea', **(attrs or {})})
 
 
 class AdminTextInputWidget(forms.TextInput):
     def __init__(self, attrs=None):
-        super().__init__(attrs={'class': 'vTextField', **(attrs or {})})
+        super().__init__(attrs={'class': 'input', **(attrs or {})})
 
 
 class AdminEmailInputWidget(forms.EmailInput):
     def __init__(self, attrs=None):
-        super().__init__(attrs={'class': 'vTextField', **(attrs or {})})
+        super().__init__(attrs={'class': 'input', **(attrs or {})})
 
 
 class AdminURLFieldWidget(forms.URLInput):
-    template_name = 'admin/widgets/url.html'
+    template_name = 'custom_admin/widgets/url.html'
 
     def __init__(self, attrs=None, validator_class=URLValidator):
         super().__init__(attrs={'class': 'vURLField', **(attrs or {})})
@@ -353,7 +358,7 @@ class AdminIntegerFieldWidget(forms.NumberInput):
     class_name = 'vIntegerField'
 
     def __init__(self, attrs=None):
-        super().__init__(attrs={'class': self.class_name, **(attrs or {})})
+        super().__init__(attrs={'class': 'input', **(attrs or {})})
 
 
 class AdminBigIntegerFieldWidget(AdminIntegerFieldWidget):
@@ -436,8 +441,8 @@ class AutocompleteMixin:
         )
         for option_value, option_label in choices:
             selected = (
-                str(option_value) in value and
-                (has_selected is False or self.allow_multiple_selected)
+                    str(option_value) in value and
+                    (has_selected is False or self.allow_multiple_selected)
             )
             has_selected |= selected
             index = len(default[1])
@@ -449,19 +454,19 @@ class AutocompleteMixin:
     def media(self):
         extra = '' if settings.DEBUG else '.min'
         i18n_name = SELECT2_TRANSLATIONS.get(get_language())
-        i18n_file = ('admin/js/vendor/select2/i18n/%s.js' % i18n_name,) if i18n_name else ()
+        i18n_file = ('custom_admin/js/vendor/select2/i18n/%s.js' % i18n_name,) if i18n_name else ()
         return forms.Media(
             js=(
-                'admin/js/vendor/jquery/jquery%s.js' % extra,
-                'admin/js/vendor/select2/select2.full%s.js' % extra,
-            ) + i18n_file + (
-                'admin/js/jquery.init.js',
-                'admin/js/autocomplete.js',
-            ),
+                   'custom_admin/js/vendor/jquery/jquery%s.js' % extra,
+                   'custom_admin/js/vendor/select2/select2.full%s.js' % extra,
+               ) + i18n_file + (
+                   'custom_admin/js/jquery.init.js',
+                   'custom_admin/js/autocomplete.js',
+               ),
             css={
                 'screen': (
-                    'admin/css/vendor/select2/select2%s.css' % extra,
-                    'admin/css/autocomplete.css',
+                    'custom_admin/css/vendor/select2/select2%s.css' % extra,
+                    'custom_admin/css/autocomplete.css',
                 ),
             },
         )

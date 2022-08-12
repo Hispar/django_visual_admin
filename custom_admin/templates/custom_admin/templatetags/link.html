@@ -1,0 +1,12 @@
+{% load i18n %}
+
+{% if icon_class %}
+    <span class="icon-text">
+    <span class="icon">
+        <i class="{{ icon_class }}"></i>
+    </span>
+    <a href="{{ url }}" class="{{ css_class }}">{% trans text %}</a>
+</span>
+{% else %}
+    <a href="{{ url }}" class="{{ css_class }}">{% trans text %}</a>
+{% endif %}

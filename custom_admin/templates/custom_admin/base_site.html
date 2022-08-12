@@ -3,9 +3,10 @@
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block branding %}
-  <a class="title is-4 navbar-item" href="{% url 'custom_admin:index' %}">
-      {{ site_header|default:_('Django administration') }}
-  </a>
+    <a class="navbar-item" href="{% url 'custom_admin:index' %}">
+        <img src="https://bulma.io/images/bulma-logo.png" width="112" height="28"
+             alt="{{ site_header|default:_('Django administration') }}">
+    </a>
 {% endblock %}
 
 {% block nav-global %}{% endblock %}
